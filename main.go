@@ -1,30 +1,42 @@
 package main
 
 import (
-	"github.com/gdamore/tcell"
+	"bufio"
+	"os"
+	"syscall"
+
 	"github.com/rivo/tview"
 )
 
 func main() {
-	app := tview.NewApplication()
+	// input := tview.NewInputField().
+	// SetDoneFunc(func(key tcell.Key) {
+	// // log.Println("input done")
+	// })
+
+	text := tview.NewTextView().SetWrap(true)
 
 	flex := tview.NewFlex().
-		AddItem( tview.NewInputField().
-		SetLabel("Enter a number: ").
-		SetPlaceholder("E.g. 1234").
-		SetFieldWidth(10).
-		SetAcceptanceFunc(tview.InputFieldInteger).
-		SetDoneFunc(func(key tcell.Key) {
-			app.Stop()
-		})
-	).
-	AddItem(tview.NewTextView().
-		Set
-	box := tview.NewBox().SetBorder(true).SetTitle("siv")
+		SetDirection(tview.FlexRow).
+		// AddItem(input, 1, 1, true).
+		AddItem(text, 0, 1, true)
 
-	inputField :=
+	app := tview.NewApplication().SetRoot(flex, true)
 
-	if err := tview.NewApplication().SetRoot(box, true).Run(); err != nil {
+	readStdIn(app, text)
+
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
+}
+
+func readStdIn(app *tview.Application, textView *tview.TextView) {
+	go func() {
+		scanner := bufio.NewScanner(os.Stdin)
+		// set tview tty to stdin
+		os.Stdin = os.NewFile(uintptr(syscall.Stderr), "/dev/tty")
+		for scanner.Scan() {
+			textView.Write([]byte("apples\n"))
+		}
+	}()
 }
