@@ -26,12 +26,8 @@
 
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/nsf/termbox-go"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/tomatosource/socklog"
+  name = "github.com/gorilla/websocket"
+  version = "1.4.1"
 
 [prune]
   go-tests = true
