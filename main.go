@@ -15,15 +15,16 @@ type Siv struct {
 	Matches        []int
 	InputChars     []rune
 	CursorPosition int
+	BrokenRegex    bool
 }
 
 func NewSiv() *Siv {
-	termbox.SetCursor(0, 0)
 	return &Siv{
 		RawFeed:        []string{},
 		Matches:        []int{},
 		InputChars:     []rune{},
 		CursorPosition: 0,
+		BrokenRegex:    false,
 	}
 }
 
@@ -40,6 +41,7 @@ func main() {
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
 
 	s := NewSiv()
+	s.DrawCursor()
 	s.ReadStdIn()
 
 	stay := true

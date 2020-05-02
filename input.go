@@ -40,46 +40,41 @@ func (s *Siv) HandleBackspace() {
 		return
 	}
 
-	if s.CursorPosition == len(s.InputChars) {
-		s.InputChars = s.InputChars[:len(s.InputChars)-1]
-		s.MoveCursorLeft()
-		s.DrawInput()
-		return
-	}
-
 	chars := make([]rune, len(s.InputChars)-1)
-	for i := 0; i < s.CursorPosition-1; i++ {
-		chars[i] = s.InputChars[i]
-	}
-	for i := s.CursorPosition; i < len(s.InputChars); i++ {
-		chars[i-1] = s.InputChars[i]
+	if s.CursorPosition == len(s.InputChars) {
+		chars = s.InputChars[:len(s.InputChars)-1]
+	} else {
+		for i := 0; i < s.CursorPosition-1; i++ {
+			chars[i] = s.InputChars[i]
+		}
+		for i := s.CursorPosition; i < len(s.InputChars); i++ {
+			chars[i-1] = s.InputChars[i]
+		}
 	}
 	s.InputChars = chars
 	s.MoveCursorLeft()
 	s.DrawInput()
-
+	s.Refilter(string(s.InputChars))
 }
 
 func (s *Siv) InsertRune(r rune) {
-	if s.CursorPosition == len(s.InputChars) {
-		s.InputChars = append(s.InputChars, r)
-		s.MoveCursorRight()
-		s.DrawInput()
-		return
-	}
-
 	chars := make([]rune, len(s.InputChars)+1)
-	for i := 0; i < s.CursorPosition; i++ {
-		chars[i] = s.InputChars[i]
-	}
-	chars[s.CursorPosition] = r
-	for i := s.CursorPosition; i < len(s.InputChars); i++ {
-		chars[i+1] = s.InputChars[i]
+	if s.CursorPosition == len(s.InputChars) {
+		chars = append(s.InputChars, r)
+	} else {
+		for i := 0; i < s.CursorPosition; i++ {
+			chars[i] = s.InputChars[i]
+		}
+		chars[s.CursorPosition] = r
+		for i := s.CursorPosition; i < len(s.InputChars); i++ {
+			chars[i+1] = s.InputChars[i]
+		}
 	}
 
 	s.InputChars = chars
 	s.MoveCursorRight()
 	s.DrawInput()
+	go s.Refilter(string(s.InputChars))
 }
 
 func (s *Siv) MoveCursorLeft() {
@@ -87,7 +82,7 @@ func (s *Siv) MoveCursorLeft() {
 		return
 	}
 	s.CursorPosition--
-	termbox.SetCursor(s.CursorPosition, 0)
+	s.DrawCursor()
 }
 
 func (s *Siv) MoveCursorRight() {
@@ -95,20 +90,40 @@ func (s *Siv) MoveCursorRight() {
 		return
 	}
 	s.CursorPosition++
-	termbox.SetCursor(s.CursorPosition, 0)
+	s.DrawCursor()
+}
+
+func (s *Siv) DrawCursor() {
+	_, h := termbox.Size()
+	termbox.SetCursor(s.CursorPosition, h-1)
+}
+
+func (s *Siv) SetBrokenRegex(status bool) {
+	s.BrokenRegex = status
+	s.DrawInput()
 }
 
 func (s *Siv) DrawInput() {
-	ClearRow(0)
+	w, h := termbox.Size()
+	inputRow := h - 1
+	ClearRow(inputRow)
 	for i, c := range s.InputChars {
-		log.Printf("%v\n", c)
-		termbox.SetCell(i, 0, c, DEFAULT, DEFAULT)
+		termbox.SetCell(i, inputRow, c, DEFAULT, DEFAULT)
 	}
 
 	if s.CursorPosition < len(s.InputChars) {
-		termbox.SetCell(s.CursorPosition, 0, s.InputChars[s.CursorPosition], DEFAULT, DEFAULT)
+		termbox.SetCell(
+			s.CursorPosition, inputRow, s.InputChars[s.CursorPosition], DEFAULT, DEFAULT,
+		)
 	} else {
-		termbox.SetCell(s.CursorPosition, 0, rune(' '), DEFAULT, DEFAULT)
+		termbox.SetCell(s.CursorPosition, inputRow, rune(' '), DEFAULT, DEFAULT)
 	}
-	log.Printf("%s\n\n", string(s.InputChars))
+
+	if s.BrokenRegex {
+		msg := "[INVALID REGEX] "
+		msgLen := len(msg)
+		for i, c := range msg {
+			termbox.SetCell(w-msgLen+i, inputRow, c, termbox.ColorRed|termbox.AttrBold, DEFAULT)
+		}
+	}
 }
