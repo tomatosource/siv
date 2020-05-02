@@ -1,14 +1,12 @@
 package main
 
 import (
-	"log"
 	"unicode"
 
 	"github.com/nsf/termbox-go"
 )
 
 func (s *Siv) HandleKeyEvent(e termbox.Event) {
-	log.Printf("%+v", e)
 	if e.Key == termbox.KeyCtrlE {
 		s.CursorPosition = len(s.InputChars)
 		termbox.SetCursor(s.CursorPosition, 0)

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/nsf/termbox-go"
-	"github.com/tomatosource/socklog"
 )
 
 const DEFAULT = termbox.ColorDefault
@@ -29,13 +27,7 @@ func NewSiv() *Siv {
 }
 
 func main() {
-	socklogger, err := socklog.New("localhost:8080")
-	if err == nil {
-		defer socklogger.Close()
-		log.SetOutput(socklogger)
-	}
-
-	err = termbox.Init()
+	err := termbox.Init()
 	if err != nil {
 		panic(err)
 	}
