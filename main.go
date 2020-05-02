@@ -29,9 +29,11 @@ func NewSiv() *Siv {
 }
 
 func main() {
-	socklogger := socklog.MustNew("localhost:8080")
-	defer socklogger.Close()
-	log.SetOutput(socklogger)
+	socklogger, err := socklog.New("localhost:8080")
+	if err == nil {
+		defer socklogger.Close()
+		log.SetOutput(socklogger)
+	}
 
 	err := termbox.Init()
 	if err != nil {
