@@ -2,138 +2,91 @@ package main
 
 import (
 	"bufio"
-	"fmt"
+	"io"
+	"log"
 	"os"
-	"strings"
 
 	"github.com/nsf/termbox-go"
+	"github.com/tomatosource/socklog"
 )
 
-var feed = []string{
-	"apples",
-	"apples",
+const DEFAULT = termbox.ColorDefault
+
+type Siv struct {
+	RawFeed        []string
+	Matches        []int
+	InputChars     []rune
+	CursorPosition int
 }
 
-func tbprint(x, y int, fg, bg termbox.Attribute, msg string) {
-	for _, c := range msg {
-		termbox.SetCell(x, y, c, fg, bg)
-		x++
+func NewSiv() *Siv {
+	termbox.SetCursor(0, 0)
+	return &Siv{
+		RawFeed:        []string{},
+		Matches:        []int{},
+		InputChars:     []rune{},
+		CursorPosition: 0,
 	}
-}
-
-var current string
-var curev termbox.Event
-
-func mouse_button_str(k termbox.Key) string {
-	switch k {
-	case termbox.MouseLeft:
-		return "MouseLeft"
-	case termbox.MouseMiddle:
-		return "MouseMiddle"
-	case termbox.MouseRight:
-		return "MouseRight"
-	case termbox.MouseRelease:
-		return "MouseRelease"
-	case termbox.MouseWheelUp:
-		return "MouseWheelUp"
-	case termbox.MouseWheelDown:
-		return "MouseWheelDown"
-	}
-	return "Key"
-}
-
-func mod_str(m termbox.Modifier) string {
-	var out []string
-	if m&termbox.ModAlt != 0 {
-		out = append(out, "ModAlt")
-	}
-	if m&termbox.ModMotion != 0 {
-		out = append(out, "ModMotion")
-	}
-	return strings.Join(out, " | ")
-}
-
-func redrawFeed() {
-	from := 0
-	if len(feed) > 5 {
-		from = len(feed) - 5
-	}
-	for i, s := range feed[from:] {
-		tbprint(0, i+5, termbox.ColorDefault, termbox.ColorDefault, s)
-	}
-}
-
-func redraw_all() {
-	const coldef = termbox.ColorDefault
-	termbox.Clear(coldef, coldef)
-	tbprint(0, 0, termbox.ColorMagenta, coldef, "Press 'q' to quit")
-	tbprint(0, 1, coldef, coldef, current)
-	switch curev.Type {
-	case termbox.EventKey:
-		tbprint(0, 2, coldef, coldef,
-			fmt.Sprintf("EventKey: k: %d, c: %c, mod: %s", curev.Key, curev.Ch, mod_str(curev.Mod)))
-	case termbox.EventMouse:
-		tbprint(0, 2, coldef, coldef,
-			fmt.Sprintf("EventMouse: x: %d, y: %d, b: %s, mod: %s",
-				curev.MouseX, curev.MouseY, mouse_button_str(curev.Key), mod_str(curev.Mod)))
-	case termbox.EventNone:
-		tbprint(0, 2, coldef, coldef, "EventNone")
-	}
-	tbprint(0, 3, coldef, coldef, fmt.Sprintf("%d", curev.N))
-	redrawFeed()
-	termbox.Flush()
 }
 
 func main() {
+	socklogger := socklog.MustNew("localhost:8080")
+	defer socklogger.Close()
+	log.SetOutput(socklogger)
+
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
 	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
-	redraw_all()
-	readStdIn()
 
-	data := make([]byte, 0, 64)
-mainloop:
-	for {
-		if cap(data)-len(data) < 32 {
-			newdata := make([]byte, len(data), len(data)+32)
-			copy(newdata, data)
-			data = newdata
-		}
-		beg := len(data)
-		d := data[beg : beg+32]
-		switch ev := termbox.PollRawEvent(d); ev.Type {
-		case termbox.EventRaw:
-			data = data[:beg+ev.N]
-			current = fmt.Sprintf("%q", data)
-			if current == `"\x03"` {
-				break mainloop
-			}
+	s := NewSiv()
+	s.ReadStdIn()
 
-			for {
-				ev := termbox.ParseEvent(data)
-				if ev.N == 0 {
-					break
-				}
-				curev = ev
-				copy(data, data[curev.N:])
-				data = data[:len(data)-curev.N]
+	stay := true
+	for stay {
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			if ev.Key == termbox.KeyCtrlC {
+				termbox.Close()
+				os.Exit(0)
 			}
+			// if ev.Ch == 'c' && ev.Mod == termbox.Mod
+			s.HandleKeyEvent(ev)
+		// TODO case termbox.EventMouse:
 		case termbox.EventError:
 			panic(ev.Err)
 		}
-		redraw_all()
 	}
 }
 
-func readStdIn() {
+func (s *Siv) ReadStdIn() {
 	go func() {
-		scanner := bufio.NewScanner(os.Stdin)
+		merged := io.MultiReader(os.Stdin, os.Stderr)
+		scanner := bufio.NewScanner(merged)
 		for scanner.Scan() {
-			feed = append(feed, scanner.Text())
-			redraw_all()
+			newLine := scanner.Text()
+			s.RawFeed = append(s.RawFeed, newLine)
+			if s.isMatch(newLine) {
+				s.Matches = append(s.Matches, len(s.RawFeed)-1)
+			}
+			s.DrawFeed()
 		}
 	}()
+}
+
+func (s *Siv) isMatch(q string) bool {
+	return true
+}
+
+func (s *Siv) DrawFeed() {
+	from := 0
+	if l := len(s.Matches); l > 5 {
+		from = l - 5
+	}
+	for i, rawIdx := range s.Matches[from:] {
+		SetRow(i+5, s.RawFeed[rawIdx])
+	}
+	termbox.Flush()
 }
