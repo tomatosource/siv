@@ -31,15 +31,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer termbox.Close()
-	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse)
+
+	defer func() {
+		termbox.Close()
+	}()
+
+	termbox.SetInputMode(termbox.InputAlt | termbox.InputMouse | termbox.InputEsc)
 
 	s := NewSiv()
 	s.DrawCursor()
 	s.ReadStdIn()
 
-	stay := true
-	for stay {
+	for {
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
 			if ev.Key == termbox.KeyCtrlC {

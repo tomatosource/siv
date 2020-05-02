@@ -124,4 +124,5 @@ func (s *Siv) DrawInput() {
 			termbox.SetCell(w-msgLen+i, inputRow, c, termbox.ColorRed|termbox.AttrBold, DEFAULT)
 		}
 	}
+	termbox.Flush()
 }
