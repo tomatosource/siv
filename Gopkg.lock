@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  digest = "1:6d29f02f0f01c627c2be40fb7347669a9ff2aa215cb97747294c1d13ffa74bdd"
-  name = "github.com/gorilla/websocket"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "b65e62901fc1c0d968042419e74789f6af455eb9"
-  version = "v1.4.2"
-
-[[projects]]
   digest = "1:38286a6220cf5b85bae83d5754bbfd7218c833b4fc8b56f5d168ea4bc073ad27"
   name = "github.com/mattn/go-runewidth"
   packages = ["."]
@@ -25,20 +17,9 @@
   pruneopts = "UT"
   revision = "38ba6e5628f1d70bac606cfd210b9ad1a16c3027"
 
-[[projects]]
-  branch = "master"
-  digest = "1:83a9c77a28fd4029faaf6f3196fa9e9ce5e3f78991f14a2907c2bbdaa30469ea"
-  name = "github.com/tomatosource/socklog"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "805db07ce9ab6b39c3e8103b304fe33343919218"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "github.com/nsf/termbox-go",
-    "github.com/tomatosource/socklog",
-  ]
+  input-imports = ["github.com/nsf/termbox-go"]
   solver-name = "gps-cdcl"
   solver-version = 1
