@@ -13,4 +13,4 @@ Live filtering of stdin
 
 ### Query language
 
-- *TODO*
+- If query string begins with `/` the remaining characters will be interpreted as a [regular expression](https://github.com/google/re2/wiki/Syntax).

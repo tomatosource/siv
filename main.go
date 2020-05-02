@@ -35,7 +35,7 @@ func main() {
 		log.SetOutput(socklogger)
 	}
 
-	err := termbox.Init()
+	err = termbox.Init()
 	if err != nil {
 		panic(err)
 	}
